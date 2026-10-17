@@ -360,7 +360,7 @@
           <label class="label" for="yield">연 배당·분배율</label>
           <div class="input-wrap"><input type="number" id="yield" data-unit="%" data-fmt="pct" value="1.5" step="0.1" min="0" max="30" inputmode="decimal"><span class="input-currency" id="yield-display">-</span></div>
           <div class="chips" data-target="yield"><button class="chip" data-v="1.2">1.2% (S&amp;P500 수준)</button><button class="chip" data-v="3.5">3.5% (배당 ETF)</button><button class="chip" data-v="8">8% (커버드콜)</button></div>
-          <div class="input-hint">그해 초 평가액 × 분배율 · 재투자하지 않고 받은 돈으로 계산 · 숫자는 예시이며 특정 상품을 뜻하지 않습니다</div>
+          <div class="input-hint">그해 초 평가액 × 분배율 · 재투자하지 않고 받은 돈으로 계산(그래서 분배율이 높을수록 총수령이 재투자 때보다 적게 나옵니다. 두 방식 비교에는 같게 적용) · 숫자는 예시이며 특정 상품을 뜻하지 않습니다</div>
         </div>
       </div>
     </div>
@@ -376,6 +376,12 @@
         <div class="input-wrap"><input type="number" id="splitN" data-unit="년" data-fmt="yr" value="3" step="1" min="2" max="20" inputmode="numeric"><span class="input-currency" id="splitN-display">-</span></div>
         <div class="chips" data-target="splitN"><button class="chip" data-v="2">2년</button><button class="chip" data-v="3">3년</button><button class="chip" data-v="5">5년</button></div>
         <div class="input-hint">예: 10년 보유 · 3년 분할이면 8·9·10년차 말에 처음 수량의 1/3씩 팝니다(보유 기간보다 길게는 못 나눔).</div>
+        <label class="label" for="splitUse" style="margin-top:14px;">중간에 판 돈은</label>
+        <select id="splitUse">
+          <option value="cash">꺼내 씀 (더 불리지 않음)</option>
+          <option value="rebuy">바로 다시 삼 (절세 매도)</option>
+        </select>
+        <div class="input-hint"><b>꺼내 씀</b>: 판 돈은 수익 0%로 보관 — 일찍 판 몫이 덜 올라 세금이 줄어도 세후 총수령이 줄 수 있습니다. <b>바로 다시 삼</b>: 판 금액을 같은 종목에 곧바로 다시 넣어 보유액은 그대로 두고, 차익만 해마다 나눠 실현합니다(세금은 마지막에 한꺼번에 뺀다고 단순화).</div>
       </div>
       <div class="input-group" style="margin-top:16px;">
         <label class="label" for="taxRatio">국내상장 ETF 매매차익 중 과세되는 비율 (과표 반영 비율)</label>
@@ -416,6 +422,7 @@
       <button class="mode-tab" data-type="regional" role="tab" type="button"><span class="mt-num">TYPE 2</span><span class="mt-title">지역가입자</span><span class="mt-desc">금융소득 1,000만원 넘으면 전액 반영</span></button>
       <button class="mode-tab" data-type="dep" role="tab" type="button"><span class="mt-num">TYPE 3</span><span class="mt-title">피부양자</span><span class="mt-desc">요건 넘으면 지역가입자로 전환</span></button>
     </div>
+    <div class="fixed-note is-hidden" id="nh-warn" style="margin-bottom:12px;"></div>
     <details class="adv-set" id="nh-set">
       <summary><span class="adv-set-title">건보료 판정에 쓰는 다른 소득 (선택)</span><span class="adv-set-sum" id="nh-summary">없음</span></summary>
       <div class="adv-body">
@@ -559,7 +566,7 @@
     <div class="formula">원천징수 = (분배금 + 매도 차익 × 과표 반영 비율) × 15.4%<br>종합과세·건보 추가 = [다른 금융소득 + 이 ETF 소득]일 때 − [다른 금융소득만]일 때의 (추가 세금 + 건보료 증가)</div>
     <h4>3. 미국 직투 세금</h4>
     <div class="formula">배당세 = 배당 × 15% · 종합과세·건보 추가 = 배당을 금융소득에 더해 위와 같은 방식<br>양도세 = [max(0, 그해 매도 차익 + 다른 해외주식 손익 − 250만원) − max(0, 다른 해외주식 손익 − 250만원)] × 22%<br>(다른 해외주식 이익에 원래 붙던 세금은 빼고, 이 투자로 늘어나는 몫만 셈)</div>
-    <p>세후 총수령 = 받은 배당 합계 + 매도 금액 합계 − 세금·건보료 합계. 건보료는 실제로는 소득이 생긴 다음 해 11월부터 1년간 붙지만, 비교를 위해 그해 소득에 대한 1년치를 그해 비용으로 셌습니다. 손익분기 차익은 배당 없이 한 해에 판 차익만 놓고 두 방식의 세금(건보료 포함)이 같아지는 금액입니다.</p>
+    <p>세후 총수령 = 받은 배당 합계 + 매도 금액 합계 − 세금·건보료 합계. 건보료는 실제로는 소득이 생긴 다음 해 11월부터 1년간 붙지만, 비교를 위해 그해 소득에 대한 1년치를 그해 비용으로 셌습니다. 손익분기 차익은 <b>마지막 매도 연도의 배당·분배금을 함께 받는다고 보고</b> 그해 판 차익을 바꿔 가며 두 방식의 세금(건보료 포함)이 같아지는 금액입니다 — 배당이 금융소득 2,000만원·건보료 1,000만원 한도를 먼저 채우기 때문입니다. 분할 매도에서 <b>판 돈 꺼내 씀</b>은 판 금액을 수익 0%로 두고, <b>바로 재매수</b>는 같은 종목에 곧바로 다시 넣어 보유액은 그대로 둔 채 차익만 나눠 실현합니다(세금은 마지막에 한꺼번에 뺀다고 단순화). 건보료 판정 소득 칸 합계가 '다른 종합소득 과세표준'보다 작으면(지역가입자·피부양자) 그 차이를 기타소득으로 보고 계산합니다.</p>
     <h4>계산에 넣지 않은 것</h4>
     <ul>
       <li><b>환율 변동</b>: 직투는 원화 환산 양도차익에 환율 몫까지 과세되고, 국내상장 ETF는 환헤지 여부에 따라 다릅니다. 같은 수익률이라고 가정했습니다.</li>
@@ -824,11 +831,13 @@ function readInputs() {
   else nh = { pension: w('d-pen'), wage: w('d-wage'), other: w('d-oth'), biz: w('d-biz'), bizReg: document.getElementById('d-bizreg').value === '1', prop: num('d-prop', 0, 0, 1000) * 1e8 };
   const years = Math.round(num('years', 10, 1, 40));
   const splitN = SELL === 'split' ? Math.max(2, Math.min(years, Math.round(num('splitN', 3, 2, 20)))) : 1;
+  const otherBase = w('otherBase');
+  const nhRaw = nh, filled = fillNh(TYPE, nh, otherBase);
   return {
     principal: w('principal'), years, growth: num('growth', 7, -20, 30) / 100, yld: num('yield', 1.5, 0, 30) / 100,
-    splitN, taxRatio: num('taxRatio', 100, 0, 100) / 100,
-    otherFin: w('otherFin'), otherBase: w('otherBase'), otherForeign: num('otherForeign', 0, -1e6, 1e7) * 1e4,
-    type: TYPE, nh,
+    splitN, rebuy: document.getElementById('splitUse').value === 'rebuy', taxRatio: num('taxRatio', 100, 0, 100) / 100,
+    otherFin: w('otherFin'), otherBase, otherForeign: num('otherForeign', 0, -1e6, 1e7) * 1e4,
+    type: TYPE, nh: filled.nh, nhRaw, nhGap: filled.gap,
   };
 }
 
@@ -842,18 +851,37 @@ function finExtra(inp, inv) {
 }
 // 이 투자로 늘어나는 양도세 (다른 해외주식 손익과 통산 · 다른 이익에 원래 붙던 세금은 빼고 증가분만)
 const cgTax = (inp, gain) => (Math.max(0, gain + inp.otherForeign - CG_DED) - Math.max(0, inp.otherForeign - CG_DED)) * CG_RATE;
-function simulate(inp, splitN) {
+// 건보료 판정 소득 칸이 '다른 종합소득 과세표준'보다 작으면 그 차이를 기타소득(100% 반영)으로 채움
+// (과세표준은 소득금액에서 공제를 뺀 값이라 소득 합계가 과세표준보다 작을 수 없음)
+// 직장가입자는 과세표준이 대부분 근로소득(보수)이라 건보료 보수 외 소득에 넣지 않음
+function fillNh(type, nh, otherBase) {
+  if (type === 'work') return { nh, gap: 0 };
+  const Y = (nh.biz || 0) + (nh.wage || 0) + (nh.pension || 0) + (nh.other || 0);
+  const gap = Math.max(0, otherBase - Y);
+  return { nh: gap > 0 ? { ...nh, other: (nh.other || 0) + gap } : nh, gap };
+}
+// rebuy: 분할 매도한 돈을 바로 같은 종목에 다시 넣는지 (true면 보유액은 그대로, 차익만 해마다 나눠 실현)
+function simulate(inp, splitN, rebuy = inp.rebuy) {
   const P = inp.principal, N = inp.years, g = inp.growth, d = inp.yld;
   const K = Math.max(1, Math.min(N, splitN));
-  let held = 1;   // 처음 수량 대비 남은 비율
+  const RB = !!rebuy && K > 1;
+  let held = 1;      // 처음 수량 대비 남은 비율 (판 돈을 현금으로 둘 때)
+  let realized = 0;  // 재매수 방식에서 앞서 실현한 차익 합계
   const rows = [];
-  const tot = { div: 0, proceeds: 0, gain: 0, etfWh: 0, etfAdd: 0, etf: 0, dirDivTax: 0, dirAdd: 0, dirCg: 0, dir: 0, etfAddTax: 0, etfAddNh: 0, dirAddTax: 0, dirAddNh: 0 };
+  const tot = { div: 0, proceeds: 0, rebought: 0, gain: 0, etfWh: 0, etfAdd: 0, etf: 0, dirDivTax: 0, dirAdd: 0, dirCg: 0, dir: 0, etfAddTax: 0, etfAddNh: 0, dirAddTax: 0, dirAddNh: 0 };
   for (let y = 1; y <= N; y++) {
     const p0 = Math.pow(1 + g, y - 1), p1 = Math.pow(1 + g, y);
-    const div = held * P * p0 * d;
+    const div = (RB ? 1 : held) * P * p0 * d;
     const q = y > N - K ? 1 / K : 0;               // 마지막 K년 동안 처음 수량의 1/K씩
-    const proceeds = q * P * p1, gain = q * P * (p1 - 1);
-    held = Math.max(0, held - q);
+    let proceeds, gain, rebought = 0;
+    if (RB) {
+      if (y < N) { gain = q * P * (p1 - 1); proceeds = 0; rebought = q * P * p1; }   // 팔고 같은 금액을 바로 다시 삼
+      else { gain = P * (p1 - 1) - realized; proceeds = P * p1; }                    // 마지막 해: 남은 것 전부(다시 산 몫 포함)
+      realized += gain;
+    } else {
+      proceeds = q * P * p1; gain = q * P * (p1 - 1);
+      held = Math.max(0, held - q);
+    }
     // 국내상장 ETF
     const etfInc = div + Math.max(0, gain * inp.taxRatio);
     const etfWh = etfInc * ETF_WH;
@@ -862,7 +890,7 @@ function simulate(inp, splitN) {
     const dirDivTax = div * US_WH;
     const da = finExtra(inp, div);
     const dirCg = q > 0 ? cgTax(inp, gain) : 0;
-    const r = { y, div, proceeds, gain, etfInc, etfWh, etfAddTax: ea.tax, etfAddNh: ea.nh, etfAdd: ea.tax + ea.nh,
+    const r = { y, div, proceeds, rebought, gain, etfInc, etfWh, etfAddTax: ea.tax, etfAddNh: ea.nh, etfAdd: ea.tax + ea.nh,
       dirDivTax, dirAddTax: da.tax, dirAddNh: da.nh, dirAdd: da.tax + da.nh, dirCg };
     r.etf = r.etfWh + r.etfAdd; r.dir = r.dirDivTax + r.dirAdd + r.dirCg;
     rows.push(r);
@@ -870,17 +898,21 @@ function simulate(inp, splitN) {
   }
   tot.gross = tot.div + tot.proceeds;
   tot.etfNet = tot.gross - tot.etf; tot.dirNet = tot.gross - tot.dir;
-  return { rows, tot, K };
+  return { rows, tot, K, RB };
 }
-// 한 해 매도 차익 G(배당 없음)일 때 두 방식의 세금·건보료
-function costAtGain(inp, G) {
-  const inc = Math.max(0, G * inp.taxRatio);
+// 직투 배당 D에 붙는 세금·건보료 (차익과 무관해 한 번만 계산)
+function dirDivCost(inp, D) { if (!(D > 0)) return 0; const da = finExtra(inp, D); return D * US_WH + da.tax + da.nh; }
+// 한 해 매도 차익 G + 그해 배당·분배금 D일 때 두 방식의 세금·건보료
+// (배당이 먼저 금융소득 2,000만원·건보료 1,000만원 한도를 채우므로 함께 넣어야 실제 연도별 표와 맞음)
+function costAtGain(inp, G, D = 0, dd = dirDivCost(inp, D)) {
+  const inc = D + Math.max(0, G * inp.taxRatio);
   const ea = finExtra(inp, inc);
-  return { etf: inc * ETF_WH + ea.tax + ea.nh, dir: cgTax(inp, G) };
+  return { etf: inc * ETF_WH + ea.tax + ea.nh, dir: dd + cgTax(inp, G) };
 }
 // ETF가 더 싼 구간 [lo, hi] (없으면 null) — 0~50억을 10만원 간격으로 훑고 경계는 1원 단위로 좁힘
-function breakEven(inp) {
-  const diff = G => { const c = costAtGain(inp, G); return c.etf - c.dir; };   // <0 이면 ETF가 유리
+function breakEven(inp, D = 0) {
+  const dd = dirDivCost(inp, D);
+  const diff = G => { const c = costAtGain(inp, G, D, dd); return c.etf - c.dir; };   // <0 이면 ETF가 유리
   const refine = (a, b) => { const sa = diff(a) < -0.5; for (let k = 0; k < 40 && b - a > 1; k++) { const m = (a + b) / 2; if ((diff(m) < -0.5) === sa) a = m; else b = m; } return b; };
   const xs = [];
   let prev = diff(1e5) < -0.5, step = 1e5;   // 첫 점 상태
@@ -897,15 +929,30 @@ function breakEven(inp) {
 
 // ============== 렌더 ==============
 let lastRes = null, beChart = null;
+const sellName = sim => sim.K > 1 ? `마지막 ${sim.K}년 분할 매도${sim.RB ? '(바로 재매수)' : ''}` : '만기 일괄 매도';
+// 건보료 판정 소득과 '다른 종합소득 과세표준'이 어긋날 때 안내
+function renderNhWarn(inp) {
+  const box = document.getElementById('nh-warn');
+  let msg = '';
+  if (inp.type === 'dep' && inp.otherBase > RULE.depIncome) {
+    msg = `다른 종합소득 과세표준이 ${manText(inp.otherBase)}이면 투자와 상관없이 피부양자 소득 요건(연 ${manText(RULE.depIncome)} 이하)을 이미 넘습니다. 실제로는 <b>지역가입자</b>라서, 이 결과는 피부양자 자격 없이(지역가입자 보험료로) 계산했습니다. 지역가입자 탭에서 소득 종류를 넣어 보시면 더 정확합니다.`;
+  } else if (inp.nhGap > 0) {
+    msg = `아래 '건보료 판정에 쓰는 다른 소득' 합계가 다른 종합소득 과세표준(${manText(inp.otherBase)})보다 작아, 차이 <b>${manText(inp.nhGap)}</b>을 기타소득(100% 반영)으로 보고 건보료를 계산했습니다. 근로·연금소득(50% 반영)이라면 아래 칸에 나눠 넣어 주세요.`;
+  }
+  box.innerHTML = msg;
+  box.classList.toggle('is-hidden', !msg);
+}
 function render() {
   const inp = readInputs();
   const sim = simulate(inp, inp.splitN);
-  const be = breakEven(inp);
-  lastRes = { inp, sim, be };
+  const beDiv = sim.rows.length ? sim.rows[sim.rows.length - 1].div : 0;   // 마지막 매도 연도의 배당·분배금
+  const be = breakEven(inp, beDiv);
+  lastRes = { inp, sim, be, beDiv };
+  renderNhWarn(inp);
   const T = sim.tot;
   const diff = T.etfNet - T.dirNet;
   const vl = document.getElementById('verdict-label'), vm = document.getElementById('verdict-main'), vs = document.getElementById('verdict-sub');
-  vl.textContent = `${inp.years}년 보유 · ${sim.K > 1 ? `마지막 ${sim.K}년 분할 매도` : '만기 일괄 매도'} · ${TYPE_NAME[TYPE]}`;
+  vl.textContent = `${inp.years}년 보유 · ${sellName(sim)} · ${TYPE_NAME[TYPE]}`;
   if (inp.principal <= 0) { vm.textContent = '투자 원금을 넣어 주세요'; vs.textContent = ''; }
   else {
     const winner = Math.abs(diff) < 1 ? null : diff > 0 ? '국내상장 ETF' : '미국 직투';
@@ -927,6 +974,7 @@ function render() {
   else if (be.always) { s4.textContent = '없음'; s4s.textContent = '이 조건에선 ETF 세금이 늘 적습니다'; }
   else if (be.fromStart) { s4.textContent = manText(be.hi); s4s.innerHTML = `이 차익까지는 ETF 세금이 적고<br>그 위로는 직투가 유리 (250만원 공제를 이미 씀)`; }
   else { s4.textContent = manText(be.lo); s4s.innerHTML = be.hi ? `ETF 유리 구간 ${manText(be.lo)}~${manText(be.hi)}<br>그 위로는 다시 직투가 유리` : `이보다 크면 ETF 세금이 적음`; }
+  if (beDiv > 0.5) s4s.innerHTML += `<br>매도하는 해 배당 ${manText(beDiv)} 포함 기준`;
 
   drawBe(inp, be, sim);
   renderSplit(inp);
@@ -1015,19 +1063,20 @@ function drawBe(inp, be, sim) {
   for (let i = 0; i <= n; i++) xs.push(Math.round(max * i / n));
   [CG_DED, be && be.lo, be && be.hi, perYearGain, RULE.nhFinMin + 1, RULE.finLimit + 1].forEach(v => { if (v != null && v > 0 && v < max) xs.push(Math.round(v)); });
   const list = [...new Set(xs)].sort((a, b) => a - b);
-  const cs = list.map(G => costAtGain(inp, G));
+  const D = (lastRes && lastRes.beDiv) || 0, dd = dirDivCost(inp, D);
+  const cs = list.map(G => costAtGain(inp, G, D, dd));
   const isMobile = window.innerWidth < 768;
   BE_MARKS = [];
   if (be && be.lo > 0) BE_MARKS.push({ v: be.lo, t: `손익분기 ${formatKRW(be.lo)}`, color: '#8B6F47' });
   if (be && be.hi) BE_MARKS.push({ v: be.hi, t: `다시 역전 ${formatKRW(be.hi)}`, color: '#8B6F47' });
   if (perYearGain > 0) BE_MARKS.push({ v: perYearGain, t: `내 차익${sim.K > 1 ? '(연평균)' : ''} ${formatKRW(perYearGain)}`, color: '#D9542B' });
   document.getElementById('be-subtitle').innerHTML =
-    `배당은 빼고, 한 해에 판 매매차익만 놓고 비교했습니다(다른 금융소득 ${manText(inp.otherFin)}, 다른 과세표준 ${manText(inp.otherBase)}, ${TYPE_NAME[TYPE]}, 과표 반영 ${pct(inp.taxRatio * 100, 0)}). ` +
+    (D > 0.5 ? `매도하는 해의 배당·분배금 <b>${manText(D)}</b>을 함께 넣고(배당이 금융소득 한도를 먼저 채움), 한 해에 판 매매차익을 바꿔 가며 비교했습니다(` : `한 해에 판 매매차익만 놓고 비교했습니다(`) + `다른 금융소득 ${manText(inp.otherFin)}, 다른 과세표준 ${manText(inp.otherBase)}, ${TYPE_NAME[TYPE]}, 과표 반영 ${pct(inp.taxRatio * 100, 0)}). ` +
     (be && be.fromStart ? `다른 해외주식 이익으로 250만원 공제를 이미 써서 처음부터 ETF 세금이 적고, <b>${manText(be.hi)}</b>을 넘으면 종합과세·건보료 때문에 직투가 적어집니다.` : be && be.always ? '이 조건에서는 어느 차익에서도 ETF 세금이 적습니다.' : be && be.lo ? `차익이 <b>${manText(be.lo)}</b>보다 작으면 250만원 공제 덕에 직투 세금이 적고, ` + (be.hi ? `<b>${manText(be.lo)}~${manText(be.hi)}</b>에서는 15.4%인 ETF가 적고, 그 위로는 종합과세·건보료가 붙어 <b>다시 직투가 적습니다</b>.` : `그보다 크면 ETF 세금이 적습니다.`) : '');
   const ds = [
     { label: '국내상장 ETF (15.4% + 종합과세·건보)', _short: 'ETF', data: list.map((G, i) => ({ x: G, y: cs[i].etf })), borderColor: '#D9542B', backgroundColor: '#D9542B', borderWidth: 3, pointRadius: 0, pointHoverRadius: 5, tension: 0 },
     { label: '미국 직투 (250만 공제 후 22%)', _short: '직투', data: list.map((G, i) => ({ x: G, y: cs[i].dir })), borderColor: '#4A5A4A', backgroundColor: '#4A5A4A', borderWidth: 3, pointRadius: 0, pointHoverRadius: 5, tension: 0 },
-    { label: 'ETF 15.4%만 (종합과세·건보 없을 때)', _short: '15.4%만', data: list.map(G => ({ x: G, y: Math.max(0, G * inp.taxRatio) * ETF_WH })), borderColor: '#B7AFA3', backgroundColor: '#B7AFA3', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 3, tension: 0, _noEnd: true },
+    { label: 'ETF 15.4%만 (종합과세·건보 없을 때)', _short: '15.4%만', data: list.map(G => ({ x: G, y: (D + Math.max(0, G * inp.taxRatio)) * ETF_WH })), borderColor: '#B7AFA3', backgroundColor: '#B7AFA3', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 3, tension: 0, _noEnd: true },
   ];
   if (beChart) beChart.destroy();
   beChart = new Chart(document.getElementById('be-chart'), {
@@ -1058,20 +1107,28 @@ function splitOptions(inp) {
   if (inp.splitN > 1 && !opts.includes(inp.splitN)) opts.push(inp.splitN);
   return opts.sort((a, b) => a - b);
 }
+// 비교표 행: 만기 일괄 + 분할 햇수마다 '꺼내 씀'과 '바로 재매수' 두 줄
+function splitRows(inp) {
+  const out = [];
+  splitOptions(inp).forEach(k => {
+    if (k === 1) out.push({ k, rb: false, name: '만기에 한 번에' });
+    else { out.push({ k, rb: false, name: `마지막 ${k}년 분할 · 판 돈 꺼내 씀` }); out.push({ k, rb: true, name: `마지막 ${k}년 분할 · 바로 재매수` }); }
+  });
+  return out.map(o => ({ ...o, T: simulate(inp, o.k, o.rb).tot }));
+}
 function renderSplit(inp) {
-  const opts = splitOptions(inp);
-  document.getElementById('split-subtitle').innerHTML = `같은 ${inp.years}년 투자를 마지막 몇 년에 나눠 팔면? 직투는 해마다 250만원 공제를 다시 쓰고, ETF는 해마다 금융소득이 작아져 종합과세·건보료를 피하기 쉬워집니다. 일찍 판 몫은 그만큼 덜 오르니 매도 금액 자체도 달라집니다.`;
-  document.getElementById('split-body').innerHTML = opts.map(k => {
-    const s = simulate(inp, k), T = s.tot, d = T.etfNet - T.dirNet;
-    const mine = k === inp.splitN;
-    return `<tr${mine ? ' class="highlight-row"' : ''}><td>${k === 1 ? '만기에 한 번에' : `마지막 ${k}년 분할`}${mine ? '<span class="tag-mini">입력값</span>' : ''}</td>
+  document.getElementById('split-subtitle').innerHTML = `같은 ${inp.years}년 투자를 마지막 몇 년에 나눠 팔면? 직투는 해마다 250만원 공제를 다시 쓰고, ETF는 해마다 금융소득이 작아져 종합과세·건보료를 피하기 쉬워집니다. <b>판 돈 꺼내 씀</b>은 일찍 판 몫이 더 오르지 않아 매도 금액 자체가 줄고, <b>바로 재매수</b>는 판 금액을 곧바로 다시 넣어 보유액은 그대로 두고 차익만 나눠 실현한 경우입니다(세금이 줄어든 만큼 세후 총수령이 늘어남).`;
+  document.getElementById('split-body').innerHTML = splitRows(inp).map(({ k, rb, name, T }) => {
+    const d = T.etfNet - T.dirNet;
+    const mine = k === inp.splitN && (k === 1 || rb === inp.rebuy);
+    return `<tr${mine ? ' class="highlight-row"' : ''}><td>${name}${mine ? '<span class="tag-mini">입력값</span>' : ''}</td>
       <td class="c-accent">${won(T.etf)}</td><td class="c-green">${won(T.dir)}</td>
       <td>${won(T.etfNet)}</td><td>${won(T.dirNet)}</td>
       <td class="${d >= 0 ? 'win-etf' : 'win-dir'}">${Math.abs(d) < 1 ? '같음' : (d > 0 ? 'ETF' : '직투') + ' +' + manText(Math.abs(d))}</td></tr>`;
   }).join('');
 }
 function renderYears(inp, sim) {
-  document.getElementById('yr-subtitle').textContent = `원금 ${manText(inp.principal)} · 주가 연 ${pct(inp.growth * 100)} · 분배율 연 ${pct(inp.yld * 100)} · ${sim.K > 1 ? `마지막 ${sim.K}년 분할 매도` : '만기 일괄 매도'}. '종합과세·건보 추가'는 다른 금융소득에 이 소득을 더했을 때 늘어나는 세금과 건보료(1년치)입니다.`;
+  document.getElementById('yr-subtitle').textContent = `원금 ${manText(inp.principal)} · 주가 연 ${pct(inp.growth * 100)} · 분배율 연 ${pct(inp.yld * 100)} · ${sellName(sim)}. '종합과세·건보 추가'는 다른 금융소득에 이 소득을 더했을 때 늘어나는 세금과 건보료(1년치)입니다.`;
   const T = sim.tot;
   const tr = (r, cls, lab) => `<tr${cls ? ` class="${cls}"` : ''}><td>${lab}</td><td>${won(r.div)}</td><td class="c-brown">${won(r.gain)}</td><td>${won(r.etfWh)}</td><td>${won(r.etfAdd)}</td><td class="c-accent">${won(r.etf)}</td><td>${won(r.dirDivTax)}</td><td>${won(r.dirAdd)}</td><td>${won(r.dirCg)}</td><td class="c-green">${won(r.dir)}</td></tr>`;
   document.getElementById('yr-body').innerHTML = sim.rows.map(r => tr(r, r.gain !== 0 ? 'highlight-row' : '', r.y + '년')).join('') +
@@ -1083,7 +1140,7 @@ function renderInsight(inp, sim, be) {
   const lo = be && be.lo, hi = be && be.hi;
   T.textContent = be && be.fromStart ? `250만원 공제를 이미 썼다면, 차익 ${manText(hi)}까지는 ETF 세금이 적습니다` : be && be.always ? '이 조건에서는 국내상장 ETF 세금이 늘 적습니다' : lo && hi ? `ETF가 유리한 차익은 ${manText(lo)}~${manText(hi)} 사이뿐입니다` : lo ? `차익 ${manText(lo)}부터는 국내상장 ETF 세금이 적습니다` : '이 조건에서는 직투 세금이 늘 적습니다';
   let h = '';
-  h += `<p><strong>① 차익이 작으면 직투가 유리합니다.</strong> 직투는 해마다 250만원까지 양도차익에 세금이 없고 넘는 부분에만 22%, 국내상장 ETF는 첫 1원부터 15.4%입니다. 다른 해외주식 거래·금융소득이 없다면 0.154 × 차익 = 0.22 × (차익 − 250만원)이 되는 <strong>약 833만원</strong>이 손익분기이고, 이보다 작으면 직투, 크면 ETF 세금이 적습니다. 그래서 직투는 <strong>해마다 250만원씩 나눠 실현</strong>할수록 유리해집니다.</p>`;
+  h += `<p><strong>① 차익이 작으면 직투가 유리합니다.</strong> 직투는 해마다 250만원까지 양도차익에 세금이 없고 넘는 부분에만 22%, 국내상장 ETF는 첫 1원부터 15.4%입니다. 배당·다른 금융소득·다른 해외주식 거래가 없다면 0.154 × 차익 = 0.22 × (차익 − 250만원)이 되는 <strong>약 833만원</strong>이 손익분기이고(이 조건에서는 매도하는 해 배당까지 넣어 ${lo ? `<strong>${manText(lo)}</strong>` : '해당 없음'}), 이보다 작으면 직투, 크면 ETF 세금이 적습니다. 그래서 직투는 <strong>해마다 250만원씩 나눠 실현</strong>할수록 유리해집니다.</p>`;
   h += `<p><strong>② 그런데 ETF 차익은 '금융소득'입니다.</strong> 국내상장 해외ETF 매매차익은 배당소득이라 다른 이자·배당과 합쳐 <strong>2,000만원을 넘으면 종합과세</strong>(최고 49.5%), <strong>1,000만원을 넘으면 건보료</strong>(지역·피부양자는 전액, 직장은 월급 외 소득 2,000만원 초과분)에 잡힙니다. 직투 양도세는 분리과세라 둘 다 상관없습니다. 이 조건에서는 ${hi ? `한 해 차익이 <strong>${manText(hi)}</strong>을 넘으면 다시 직투가 유리해집니다` : lo ? `큰 차익에서도 ETF가 계속 유리합니다` : `ETF가 유리한 구간이 없습니다`}. 큰돈을 한 해에 몰아서 팔 계획이라면 이 점이 결과를 뒤집습니다.</p>`;
   h += `<p><strong>③ 이 비교 밖의 선택지도 있습니다.</strong> 국내상장 해외ETF는 <strong>연금저축·IRP·ISA</strong>에 담을 수 있어 세금을 연금 받을 때까지 미루거나(연금소득세 3.3~5.5%), ISA 비과세 한도를 넘는 부분만 9.9%로 낼 수 있고, 이렇게 받은 돈은 금융소득종합과세·건보료 계산에서도 빠집니다. 직투는 이 계좌들에 담을 수 없습니다. 그래서 판단 기준은 '어느 쪽 세율이 낮냐'보다 <strong>절세계좌 한도를 먼저 채울 수 있느냐, 일반계좌에서 한 해에 얼마를 실현하느냐, 다른 금융소득이 얼마냐</strong>입니다. 특정 상품을 정하기 전에 내 숫자로 먼저 확인해 보세요.</p>`;
   h += `<p>세부 계산은 <a href="https://ttokjaetv.github.io/overseas-stock-tax/" target="_blank" rel="noopener">해외주식 양도세 계산기</a>(종목별·환율 몫)와 <a href="https://ttokjaetv.github.io/fin-income-tax/" target="_blank" rel="noopener">금융소득종합과세·건보료 계산기</a>에서 이어서 볼 수 있습니다.</p>`;
@@ -1093,25 +1150,25 @@ function renderInsight(inp, sim, be) {
 // ============== 표 내려받기 ==============
 function exportYears() {
   const { sim } = lastRes;
-  const rows = [['연차', '배당·분배금', '매도 금액', '매도 차익', 'ETF 과세 금융소득', 'ETF 원천징수 15.4%', 'ETF 종합과세 추가세', 'ETF 건보료 증가', 'ETF 합계', '직투 배당세 15%', '직투 종합과세 추가세', '직투 건보료 증가', '직투 양도세 22%', '직투 합계']];
+  const rows = [['연차', '배당·분배금', '매도 금액(현금 회수)', '재매수 금액', '매도 차익', 'ETF 과세 금융소득', 'ETF 원천징수 15.4%', 'ETF 종합과세 추가세', 'ETF 건보료 증가', 'ETF 합계', '직투 배당세 15%', '직투 종합과세 추가세', '직투 건보료 증가', '직투 양도세 22%', '직투 합계']];
   const R = Math.round;
-  sim.rows.forEach(r => rows.push([r.y, R(r.div), R(r.proceeds), R(r.gain), R(r.etfInc), R(r.etfWh), R(r.etfAddTax), R(r.etfAddNh), R(r.etf), R(r.dirDivTax), R(r.dirAddTax), R(r.dirAddNh), R(r.dirCg), R(r.dir)]));
+  sim.rows.forEach(r => rows.push([r.y, R(r.div), R(r.proceeds), R(r.rebought), R(r.gain), R(r.etfInc), R(r.etfWh), R(r.etfAddTax), R(r.etfAddNh), R(r.etf), R(r.dirDivTax), R(r.dirAddTax), R(r.dirAddNh), R(r.dirCg), R(r.dir)]));
   const T = sim.tot;
-  rows.push(['합계', R(T.div), R(T.proceeds), R(T.gain), '', R(T.etfWh), R(T.etfAddTax), R(T.etfAddNh), R(T.etf), R(T.dirDivTax), R(T.dirAddTax), R(T.dirAddNh), R(T.dirCg), R(T.dir)]);
-  rows.push(['세후 총수령', '', '', '', '', '', '', '', R(T.etfNet), '', '', '', '', R(T.dirNet)]);
+  rows.push(['합계', R(T.div), R(T.proceeds), R(T.rebought), R(T.gain), '', R(T.etfWh), R(T.etfAddTax), R(T.etfAddNh), R(T.etf), R(T.dirDivTax), R(T.dirAddTax), R(T.dirAddNh), R(T.dirCg), R(T.dir)]);
+  rows.push(['세후 총수령', '', '', '', '', '', '', '', '', R(T.etfNet), '', '', '', '', R(T.dirNet)]);
   return rows;
 }
 function exportSplit() {
   const { inp } = lastRes;
   const rows = [['매도 방식', 'ETF 세금·건보료', '직투 세금·건보료', 'ETF 세후 총수령', '직투 세후 총수령', '차이(ETF−직투)']];
-  splitOptions(inp).forEach(k => { const T = simulate(inp, k).tot; rows.push([k === 1 ? '만기 일괄' : `마지막 ${k}년 분할`, Math.round(T.etf), Math.round(T.dir), Math.round(T.etfNet), Math.round(T.dirNet), Math.round(T.etfNet - T.dirNet)]); });
+  splitRows(inp).forEach(({ name, T }) => rows.push([name, Math.round(T.etf), Math.round(T.dir), Math.round(T.etfNet), Math.round(T.dirNet), Math.round(T.etfNet - T.dirNet)]));
   return rows;
 }
 function exportInputs() {
   const { inp, be } = lastRes;
   return [['항목', '값'], ['투자 원금(원)', Math.round(inp.principal)], ['보유 기간(년)', inp.years], ['연 주가 상승률(%)', inp.growth * 100], ['연 분배율(%)', inp.yld * 100],
-    ['매도', inp.splitN > 1 ? `마지막 ${inp.splitN}년 분할` : '만기 일괄'], ['과표 반영 비율(%)', inp.taxRatio * 100], ['다른 금융소득(원/년)', Math.round(inp.otherFin)],
-    ['다른 종합소득 과세표준(원)', Math.round(inp.otherBase)], ['다른 해외주식 손익(원/매도연도)', Math.round(inp.otherForeign)], ['건보 유형', TYPE_NAME[inp.type]],
+    ['매도', inp.splitN > 1 ? `마지막 ${inp.splitN}년 분할 · ${inp.rebuy ? '판 돈 바로 재매수' : '판 돈 꺼내 씀'}` : '만기 일괄'], ['과표 반영 비율(%)', inp.taxRatio * 100], ['다른 금융소득(원/년)', Math.round(inp.otherFin)],
+    ['다른 종합소득 과세표준(원)', Math.round(inp.otherBase)], ['다른 해외주식 손익(원/매도연도)', Math.round(inp.otherForeign)], ['건보 유형', TYPE_NAME[inp.type]], ['건보료 소득 보정(원, 과세표준과의 차이)', Math.round(inp.nhGap || 0)], ['손익분기에 넣은 매도연도 배당(원)', Math.round(lastRes.beDiv || 0)],
     ['손익분기 차익(원)', be && be.lo ? Math.round(be.lo) : ''], ['다시 역전되는 차익(원)', be && be.hi ? Math.round(be.hi) : ''], ['기준', '2026년 세법·건보료 · 2026-10-12 확인']];
 }
 document.addEventListener('click', e => {
@@ -1120,8 +1177,8 @@ document.addEventListener('click', e => {
   const name = '해외ETF_vs_직투_연도별세금';
   if (id === 'dl-csv') TJX.csv(name, exportYears());
   else TJX.xlsx(name, [
-    { name: '연도별', rows: exportYears(), widths: [10, 14, 15, 15, 16, 16, 16, 15, 14, 15, 16, 15, 15, 14] },
-    { name: '분할 매도 비교', rows: exportSplit(), widths: [16, 17, 17, 17, 17, 16] },
+    { name: '연도별', rows: exportYears(), widths: [10, 14, 17, 14, 15, 16, 16, 16, 15, 14, 15, 16, 15, 15, 14] },
+    { name: '분할 매도 비교', rows: exportSplit(), widths: [30, 17, 17, 17, 17, 16] },
     { name: '입력 조건', rows: exportInputs(), widths: [30, 24] },
   ]);
 });
@@ -1162,7 +1219,7 @@ function updateDisplays() {
     const cur = parseFloat(document.getElementById(box.dataset.target).value);
     box.querySelectorAll('.chip').forEach(ch => ch.classList.toggle('on', parseFloat(ch.dataset.v) === cur));
   });
-  const inp = readInputs(), nh = inp.nh;
+  const inp = readInputs(), nh = inp.nhRaw;
   const parts = [];
   if (TYPE === 'dep') { if (nh.pension) parts.push('연금 ' + manText(nh.pension)); if (nh.wage) parts.push('근로 ' + manText(nh.wage)); if (nh.other) parts.push('기타 ' + manText(nh.other)); if (nh.biz) parts.push('사업 ' + manText(nh.biz)); if (nh.prop) parts.push('재산 ' + (Math.round(nh.prop / 1e7) / 10) + '억'); }
   else { if (nh.biz) parts.push('사업 등 ' + manText(nh.biz)); if (nh.wage) parts.push('근로 ' + manText(nh.wage)); if (nh.pension) parts.push('연금 ' + manText(nh.pension)); }
@@ -1192,7 +1249,7 @@ function resultText() {
   const { inp, sim, be } = lastRes, T = sim.tot, d = T.etfNet - T.dirNet;
   return [
     `[국내상장 해외ETF vs 미국 직투 세후 비교 (2026년 세법 기준)]`,
-    `원금 ${manText(inp.principal)} · ${inp.years}년 · 주가 연 ${pct(inp.growth * 100)} · 분배 연 ${pct(inp.yld * 100)} · ${sim.K > 1 ? `마지막 ${sim.K}년 분할 매도` : '만기 일괄 매도'}`,
+    `원금 ${manText(inp.principal)} · ${inp.years}년 · 주가 연 ${pct(inp.growth * 100)} · 분배 연 ${pct(inp.yld * 100)} · ${sellName(sim)}`,
     `다른 금융소득 ${manText(inp.otherFin)} · 다른 과세표준 ${manText(inp.otherBase)} · ${TYPE_NAME[inp.type]}`,
     `국내상장 ETF: 세금·건보료 ${won(T.etf)} → 세후 ${won(T.etfNet)}`,
     `미국 직투: 세금·건보료 ${won(T.dir)} → 세후 ${won(T.dirNet)}`,
@@ -1205,7 +1262,7 @@ function buildUrl() {
   const p = new URLSearchParams();
   const g = id => { const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? String(Math.round(v * 100) / 100) : '0'; };
   p.set('p', g('principal')); p.set('y', g('years')); p.set('g', g('growth')); p.set('d', g('yield'));
-  p.set('s', SELL); if (SELL === 'split') p.set('n', g('splitN'));
+  p.set('s', SELL); if (SELL === 'split') { p.set('n', g('splitN')); if (document.getElementById('splitUse').value === 'rebuy') p.set('u', 'rb'); }
   p.set('tr', g('taxRatio')); p.set('of', g('otherFin')); p.set('ob', g('otherBase'));
   if (parseFloat(g('otherForeign')) !== 0) p.set('ox', g('otherForeign'));
   p.set('t', TYPE);
@@ -1230,12 +1287,14 @@ function readUrl() {
   if (q.get('dr') === '1') { document.getElementById('d-bizreg').value = '1'; nhAny = true; }
   const t = q.get('t'); if (['work', 'regional', 'dep'].includes(t)) TYPE = t;
   const s = q.get('s'); if (['once', 'split'].includes(s)) SELL = s;
+  if (q.get('u') === 'rb') document.getElementById('splitUse').value = 'rebuy';
   if (nhAny) document.getElementById('nh-set').open = true;
 }
 
 function bindEvents() {
   NUM_IDS.forEach(id => document.getElementById(id).addEventListener('input', rerender));
   document.getElementById('d-bizreg').addEventListener('change', rerender);
+  document.getElementById('splitUse').addEventListener('change', rerender);
   document.querySelectorAll('.chips[data-target]').forEach(box => box.addEventListener('click', e => {
     const ch = e.target.closest('.chip'); if (!ch) return;
     document.getElementById(box.dataset.target).value = ch.dataset.v; rerender();
