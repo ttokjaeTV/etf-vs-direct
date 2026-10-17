@@ -721,13 +721,18 @@ function finTax(x) {
 }
 // 건보료에 잡히는 금융소득 (1,000만원 이하 제외, 넘으면 전액 · 종합과세면 그로스업 포함)
 function nhFinCounted(t) { return t.F <= RULE.nhFinMin ? 0 : (t.comp ? t.finAmt : t.F); }
-// 소득월액 → 월 건강보험료·장기요양보험료
+// 고지서처럼 10원 미만 버림
+const floor10 = v => Math.floor(v / 10 + 1e-9) * 10;
+// 소득월액 → 월 건강보험료·장기요양보험료 (각각 10원 미만 절사, 장기요양은 절사된 건보료 기준)
 function nhPremium(m, regional) {
   let h = Math.max(0, m) * RULE.hi;
-  if (regional && m <= RULE.floorIncome) h = RULE.hiFloor;
-  h = Math.min(RULE.hiCap, h);
-  const l = h * RULE.ltc / RULE.hi;
-  return { health: h, ltc: l, monthly: h + l, annual: (h + l) * 12 };
+  // 지역가입자: 소득월액 28만원 이하이거나, 계산값이 하한보다 작으면 하한 보험료
+  const atFloor = !!regional && (m <= RULE.floorIncome || h < RULE.hiFloor);
+  if (atFloor) h = RULE.hiFloor;
+  const atCap = h > RULE.hiCap;
+  h = floor10(Math.min(RULE.hiCap, h));
+  const l = floor10(h * RULE.ltc / RULE.hi);
+  return { health: h, ltc: l, monthly: h + l, annual: (h + l) * 12, atFloor, atCap };
 }
 // type: 'work'(직장) | 'regional'(지역) | 'dep'(피부양자)
 // o = { biz(사업·임대·기타), wage(근로), pension(공적연금), other(기타·피부양자), bizReg(true/false), prop(재산세 과세표준) }
