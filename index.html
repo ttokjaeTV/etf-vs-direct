@@ -109,6 +109,7 @@
   .verdict-main .hl { color: #FFB38F; }
   .verdict-sub { font-size: 15px; color: #D9D2C5; font-weight: 500; margin-top: 12px; line-height: 1.7; }
   .verdict-sub strong { color: var(--white); }
+  .verdict-sub a { color: #FFB38F; font-weight: 800; text-decoration: none; }
 
   .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
   .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
@@ -981,14 +982,17 @@ function render() {
     let sub = `매매차익 합계 <strong>${manText(gainTot)}</strong>, 배당 합계 <strong>${manText(T.div)}</strong> 기준입니다. 세금·건보료는 ETF <strong>${manText(T.etf)}</strong>, 직투 <strong>${manText(T.dir)}</strong>. `;
     if (T.etfAdd > 0.5) sub += `ETF 쪽은 매매차익이 금융소득으로 잡혀 종합과세·건보료로 <strong>${manText(T.etfAdd)}</strong>이 더 붙었습니다. `;
     if (sim.rows.some(r => r.etfAddTax < -0.5)) sub += `근로소득이 없어 종합과세된 해에는 표준세액공제 몫(해마다 최대 ${manText(RULE.stdCredit * (1 + RULE.local))}, 지방세 포함)을 5월 신고 때 돌려받아 ETF 세금에서 뺐습니다. `;
-    if (diff < 0 && be && be.lo > 0 && gainTot / sim.K < be.lo) sub += `해마다 판 차익이 작아 직투의 ${RX.man(CG_DED)}원 공제 효과가 큽니다.`;
+    // 차익이 손실(0 이하)이면 공제를 쓸 일이 없으니 공제 효과 문장을 붙이지 않음
+    if (diff < 0 && gainTot > 0 && be && be.lo > 0 && gainTot / sim.K < be.lo) sub += `해마다 판 차익이 작아 직투의 ${RX.man(CG_DED)}원 공제 효과가 큽니다.`;
+    // ETF 쪽 금융소득(다른 금융소득 포함)이 한 해라도 종합과세 기준을 넘으면 해외주식 양도세 계산기로 이어 줌 (1원 미만 끝수는 넘은 것으로 보지 않음)
+    if (sim.rows.some(r => inp.otherFin + r.etfInc > RULE.finLimit + 0.5)) sub += (sub.endsWith(' ') ? '' : ' ') + `ETF로 받으면 다른 금융소득과 합친 금융소득이 한 해 ${RX.man(RULE.finLimit)}원을 넘어 종합과세되는 해가 있습니다. 직투 양도세는 <a href="https://ttokjaetv.github.io/overseas-stock-tax/" target="_blank" rel="noopener">해외주식 양도세 계산기</a>에서 더 자세히 계산해 볼 수 있습니다.`;
     vs.innerHTML = sub;
   }
   document.getElementById('s1-value').textContent = manText(T.etfNet);
   document.getElementById('s1-sub').innerHTML = `세금·건보료 ${manText(T.etf)}<br>원천 ${manText(T.etfWh)} · 종합과세·건보 ${manText(T.etfAdd)}${sim.rows.some(r => r.etfAddTax < -0.5) ? '(신고 환급 반영)' : ''}`;
   document.getElementById('s2-value').textContent = manText(T.dirNet);
   document.getElementById('s2-sub').innerHTML = `세금·건보료 ${manText(T.dir)}<br>배당 ${manText(T.dirDivTax + T.dirAdd)} · 양도세 ${manText(T.dirCg)}`;
-  document.getElementById('s3-value').textContent = (diff >= 0 ? 'ETF +' : '직투 +') + manText(Math.abs(diff));
+  document.getElementById('s3-value').textContent = Math.abs(diff) < 1 ? '차이 없음' : (diff > 0 ? 'ETF +' : '직투 +') + manText(Math.abs(diff));   // 1원 미만은 판정과 같이 '같음'
   document.getElementById('s3-sub').innerHTML = `원금 ${manText(inp.principal)} 대비 ${pct(Math.abs(diff) / Math.max(1, inp.principal) * 100, 2)}`;
   const s4 = document.getElementById('s4-value'), s4s = document.getElementById('s4-sub');
   if (!be) { s4.textContent = '없음'; s4s.textContent = '이 조건에선 어느 차익에서도 직투 세금이 적습니다'; }
